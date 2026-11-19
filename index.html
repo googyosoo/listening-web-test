@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>듣기 음원 만들기</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#fff; --line:#dfe3ec; --ink:#1d2433; --mute:#667085; --brand:#3b5bdb; --brand2:#e7ecff; --ok:#1b8a4b; --warn:#b54708; --bad:#c92a2a; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:"Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif; background:var(--bg); color:var(--ink); line-height:1.5; }
+  header { background:var(--brand); color:#fff; padding:18px 24px; }
+  header h1 { margin:0; font-size:22px; }
+  header p { margin:4px 0 0; opacity:.9; font-size:14px; }
+  main { max-width:980px; margin:0 auto; padding:20px 16px 80px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin-bottom:16px; }
+  h2 { margin:0 0 4px; font-size:17px; }
+  h2 .no { display:inline-block; width:24px; height:24px; line-height:24px; text-align:center; background:var(--brand); color:#fff; border-radius:50%; font-size:13px; margin-right:8px; }
+  .sub { color:var(--mute); font-size:13px; margin:0 0 12px; }
+  textarea { width:100%; min-height:260px; font-family:Consolas,"D2Coding",monospace; font-size:14px; border:1px solid var(--line); border-radius:8px; padding:10px; resize:vertical; }
+  button { font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:#fff; padding:6px 12px; }
+  button:hover { background:#f0f2f7; }
+  button.primary { background:var(--brand); color:#fff; border-color:var(--brand); padding:12px 28px; font-size:16px; font-weight:bold; }
+  button.primary:hover { background:#304bc2; }
+  button.primary:disabled { background:#9aa7e0; border-color:#9aa7e0; cursor:not-allowed; }
+  button.mini { padding:3px 8px; font-size:13px; }
+  select, input[type=number] { font:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 6px; max-width:100%; background:#fff; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .muted { color:var(--mute); font-size:13px; }
+  .tag { display:inline-block; background:var(--brand2); color:var(--brand); border-radius:999px; padding:1px 9px; font-size:12px; margin-left:6px; }
+  .warn { color:var(--warn); font-size:13px; }
+  .bar { background:var(--brand2); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .bar b { font-size:14px; }
+  .grid { display:grid; grid-template-columns: auto 1fr; gap:8px 10px; align-items:center; }
+  .grid label { font-size:13px; color:var(--mute); white-space:nowrap; }
+  .vrow { display:flex; gap:6px; align-items:center; }
+  .vrow select { flex:1; min-width:0; }
+  .card { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+  .chead { font-weight:bold; margin-bottom:8px; }
+  details summary { cursor:pointer; color:var(--mute); font-size:13px; margin-top:8px; }
+  .script { font-size:13px; background:#fafbfe; border:1px solid var(--line); border-radius:6px; padding:8px; margin-top:6px; max-height:180px; overflow:auto; }
+  .script div { margin:2px 0; }
+  .spk { display:inline-block; min-width:28px; font-weight:bold; color:var(--brand); }
+  progress { width:100%; height:16px; }
+  pre.log { background:#101828; color:#d0d5dd; border-radius:8px; padding:10px; font-size:12px; max-height:220px; overflow:auto; white-space:pre-wrap; margin:8px 0 0; }
+  .audio { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .audio audio { width:100%; margin-top:6px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top; }
+  th { background:#f7f8fc; }
+  .okbox { background:#e8f7ee; color:var(--ok); border-radius:8px; padding:10px 12px; }
+  .badbox { background:#fdecec; color:var(--bad); border-radius:8px; padding:10px 12px; white-space:pre-wrap; }
+  .warnbox { background:#fff4e5; color:var(--warn); border-radius:8px; padding:10px 12px; white-space:pre-wrap; }
+  .graybox { background:#f2f4f7; color:#344054; border-radius:8px; padding:10px 12px; white-space:pre-wrap; }
+  .chips { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+  .chip { background:#f2f4f7; border-radius:999px; padding:2px 10px; font-size:12px; color:#344054; }
+  .chip.ok { background:#e8f7ee; color:var(--ok); } .chip.warn { background:#fff4e5; color:var(--warn); } .chip.bad { background:#fdecec; color:var(--bad); }
+  .tag:empty { display:none; }
+  .tag.new { background:#fff4e5; color:var(--warn); }
+  .plan { margin-top:10px; font-size:14px; }
+  td.ok { color:var(--ok); font-weight:bold; } td.bad { color:var(--bad); font-weight:bold; }
+  .hidden { display:none; }
+  label.inline { display:inline-flex; align-items:center; gap:6px; margin-right:14px; }
+  code { background:#eef0f6; padding:1px 5px; border-radius:4px; }
+  mark.miss { background:#ffd8d8; color:#a61b1b; padding:0 2px; border-radius:3px; }
+  mark.extra { background:#d8e6ff; color:#1d4ed8; padding:0 2px; border-radius:3px; }
+  .issue { font-size:13px; border-radius:6px; padding:5px 8px; margin:4px 0; }
+  .issue.high { background:#fdecec; color:var(--bad); } .issue.mid { background:#fff4e5; color:var(--warn); }
+  .issue.low { background:#f2f4f7; color:#344054; } .issue.ok { background:#e8f7ee; color:var(--ok); }
+  .ev { font-style:italic; font-size:13px; color:#344054; margin:2px 0 2px 8px; }
+  .qin { width:100%; font:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 7px; }
+  textarea.qin.small { min-height:54px; }
+  .qedit .vrow { margin:3px 0; } .qedit label.muted { display:block; margin-top:6px; }
+  .okt { color:var(--ok); } .tag.okc { background:#e8f7ee; color:var(--ok); } .tag.badc { background:#fdecec; color:var(--bad); }
+  td.acts .mini { margin:2px 2px 2px 0; } .ptab td { font-size:13px; }
+  input[type=password], #exTitle { font:inherit; border:1px solid var(--line); border-radius:6px; padding:5px 7px; }
+  #modalBg { position:fixed; inset:0; background:rgba(16,24,40,.45); z-index:50; }
+  .modal { position:fixed; left:50%; top:3vh; transform:translateX(-50%); width:min(1000px,95vw); max-height:94vh; overflow:auto;
+           background:#fff; border-radius:14px; padding:18px 22px; z-index:60; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  #picker { z-index:70; width:min(900px,92vw); top:5vh; }
+  .modal h2 { margin:0 0 4px; font-size:19px; }
+  .vcell b { font-size:15px; } .vcell .mini { margin:3px 3px 0 0; }
+  .vgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:8px; margin:6px 0 14px; }
+  .vcard { border:1px solid var(--line); border-radius:10px; padding:8px 10px; }
+  .vcard.cur { border-color:var(--brand); background:var(--brand2); }
+  .vcard .nm { font-weight:bold; } .vcard .mini { margin:4px 4px 0 0; }
+  .seg button { border-radius:0; margin:0; } .seg button:first-child { border-radius:8px 0 0 8px; } .seg button:last-child { border-radius:0 8px 8px 0; }
+  .seg button.on { background:var(--brand); color:#fff; border-color:var(--brand); }
+</style>
+</head>
+<body>
+<header>
+  <h1>듣기 음원 만들기 <span style="font-size:13px;font-weight:normal;background:rgba(255,255,255,.2);border-radius:999px;padding:2px 10px;vertical-align:middle">버전 v13 · 2026-11-10</span></h1>
+  <p>대본을 붙여넣고, 목소리를 고르고, 버튼 하나로 음원과 검수 결과까지 만듭니다. (이 컴퓨터에서만 동작합니다)</p>
+</header>
+<main>
+
+<section>
+  <h2><span class="no">1</span>대본 입력</h2>
+  <p class="sub">아래 형식으로 쓰거나, 만들어 둔 대본(.txt)을 불러오세요. 입력하면 자동으로 문항을 인식합니다.</p>
+  <textarea id="script" spellcheck="false"></textarea>
+  <div class="row" style="margin-top:8px">
+    <button id="btnSample">예시 대본 넣기</button>
+    <button id="btnFile">대본 파일 불러오기 (.txt)</button>
+    <input type="file" id="fileIn" accept=".txt,text/plain" class="hidden">
+    <span id="parseInfo" class="muted"></span>
+  </div>
+  <div id="warnings" class="warn"></div>
+  <div id="checks"></div>
+  <details>
+    <summary>대본 쓰는 법 보기</summary>
+    <div class="script">
+      <div><code>## 01 | 제목 | 악센트=UK+US | 속도=-5% | 반복=2</code> : 문항 시작 줄</div>
+      <div><span class="spk">M:</span> 남자 &nbsp; <span class="spk">W:</span> 여자 &nbsp; <span class="spk">N:</span> 한 사람이 읽는 담화 &nbsp; <span class="spk">KO:</span> 한국어 안내</div>
+      <div>악센트(US UK AU IN IE CA NZ ZA)는 <b>처음 고르는 목소리</b>만 정해 줍니다. 아래 2번에서 목소리를 직접 바꿀 수 있습니다.</div>
+      <div>맨 위에 <code>@설정 악센트=US 속도=+0% 반복=2</code> 를 쓰면 모든 문항의 기본값이 됩니다.</div>
+      <div><b>목소리·속도·재생 횟수·발음은 모두 이 화면(2번)에서</b> 정하고 고칩니다. 대본에는 문장만 쓰면 됩니다.
+        (예전에 대본에 <code>목소리N=</code>, <code>@발음</code> 처럼 적어 둔 파일을 불러오면 그 설정은 화면 설정으로 자동으로 옮겨집니다.)</div>
+    </div>
+  </details>
+</section>
+
+
+<section id="secItems" class="hidden">
+  <h2><span class="no">2</span>문항별 목소리 · 속도 · 재생 횟수</h2>
+  <p class="sub">▶ 버튼을 누르면 그 목소리로 해당 역할의 첫 문장을 미리 들어볼 수 있습니다. 고른 설정은 자동으로 저장되어 다음에 열어도 그대로 남습니다.</p>
+  <div class="row" style="margin-bottom:10px">
+    <button id="btnReset" class="mini">목소리·속도 설정 초기화 (대본의 악센트 기본값으로)</button>
+    <span id="saveInfo" class="muted"></span>
+  </div>
+  <div class="bar">
+    <b>모든 문항에 한 번에 적용</b>
+    <div class="grid" style="margin-top:8px">
+      <label>남자(M)</label><div class="vrow"><select id="gM"></select><button class="mini" data-gprev="M">▶</button></div>
+      <label>여자(W)</label><div class="vrow"><select id="gW"></select><button class="mini" data-gprev="W">▶</button></div>
+      <label>해설(N)</label><div class="vrow"><select id="gN"></select><button class="mini" data-gprev="N">▶</button></div>
+      <label>한국어 안내</label><div class="vrow"><select id="gKO"></select><button class="mini" data-gprev="KO">▶</button></div>
+      <label>본문 재생</label>
+      <div class="row">
+        <select id="gRep"><option value="">(바꾸지 않음)</option><option value="1">모두 1회</option><option value="2">모두 2회</option></select>
+        <span class="muted">속도</span><input type="number" id="gRate" step="5" min="-50" max="50" placeholder="그대로" style="width:80px"><span class="muted">%</span>
+        <button id="btnApplyAll" class="primary" style="padding:6px 16px;font-size:14px">전체에 적용</button>
+      </div>
+    </div>
+    <label class="inline muted" style="margin-top:8px"><input type="checkbox" id="showAll"> 영어 외 다른 언어 목소리도 목록에 보기</label>
+  </div>
+  <details id="pronBox" class="card" style="margin:10px 0">
+    <summary><b>발음 사전</b> <span class="tag" id="pronCount"></span> <span class="muted">발음이 틀리게 나오는 단어를 '이렇게 읽어라'로 고칩니다. 대본·자막의 철자는 그대로 둡니다.</span></summary>
+    <div class="muted" style="margin:6px 0;font-size:13px">
+      · <b>원래 단어</b>는 대본에 적힌 그대로(대소문자·마침표 포함), <b>읽을 방식</b>은 소리 나는 대로 영어 철자로 씁니다. 예: Vance → Vans, St. → Street, Dr. → Doctor, 2 p.m. → two p m<br>
+      · <b>적용 문항</b>을 비워 두면 모든 문항에 적용됩니다. read(과거형)처럼 문항마다 다르게 읽어야 하면 문항 번호를 적으세요.<br>
+      · ▶로 원래 발음과 고친 발음을 비교해 들어 보세요. 바꾼 뒤 '음원 만들기'를 누르면 그 단어가 들어간 줄만 새로 만듭니다.<br>
+      · 여기서 등록한 단어는 자동으로 저장되어 다음에도 그대로 적용됩니다.<br>
+      · 철자를 바꾸는 방식이라 모든 발음을 고칠 수는 없습니다. 잘 안 되면 철자를 몇 가지 바꿔 보거나 목소리를 바꿔 보세요.
+    </div>
+    <div class="row" style="margin-bottom:6px"><span class="muted">미리듣기 목소리</span><select id="pronVoice" style="max-width:260px"></select><button class="mini" id="btnPronAdd">+ 단어 추가</button><span id="pronInfo" class="muted"></span></div>
+    <table class="ptab" id="pronTable"></table>
+  </details>
+  <div id="items"></div>
+</section>
+
+<section id="secOpts" class="hidden">
+  <h2><span class="no">3</span>만들기 옵션</h2>
+  <div class="grid" style="margin-top:8px">
+    <label>파일 형태</label>
+    <div>
+      <label class="inline"><input type="radio" name="combine" value="none" checked> 문항별 파일만</label>
+      <label class="inline"><input type="radio" name="combine" value="both"> 문항별 + 전체 합본</label>
+      <label class="inline"><input type="radio" name="combine" value="only"> 전체 합본만</label>
+    </div>
+    <label>문항 사이 간격</label>
+    <div class="row"><input type="number" id="itemGap" value="5" min="0" max="60" style="width:80px"> <span class="muted">초 (합본일 때만 적용)</span></div>
+    <label>받아쓰기 검수</label>
+    <div class="row">
+      <label class="inline"><input type="checkbox" id="check" checked> 만든 음원을 다시 받아써서 대본과 비교</label>
+      <select id="model"><option value="base.en">빠르게 (base.en)</option><option value="small.en">더 정확하게 (small.en, 느림)</option></select>
+    </div>
+    <label>목소리 확인 단계</label>
+    <div class="row"><label class="inline"><input type="checkbox" id="voiceStepOn" checked> '음원 만들기'를 누르면 먼저 문항별 목소리를 확인하고 고르는 창 보이기</label></div>
+    <label>수정한 줄만</label>
+    <div class="row">
+      <label class="inline"><input type="checkbox" id="reuse" checked> 바뀌지 않은 줄은 저장된 음성을 재사용 (수정한 줄만 새로 만들기)</label>
+    </div>
+    <label>저장된 음성</label>
+    <div class="row"><span id="cacheInfo" class="muted"></span><button id="btnClearCache" class="mini">비우기</button></div>
+  </div>
+</section>
+
+<section id="secGo" class="hidden">
+  <div class="row">
+    <button id="btnGo" class="primary">음원 만들기</button>
+    <span id="goInfo" class="muted"></span>
+  </div>
+  <div id="planInfo" class="plan"></div>
+  <div id="progWrap" class="hidden" style="margin-top:12px">
+    <progress id="prog" value="0" max="100"></progress>
+    <div id="progText" class="muted"></div>
+    <details><summary>진행 기록 보기</summary><pre class="log" id="log"></pre></details>
+  </div>
+</section>
+
+<section id="secRes" class="hidden">
+  <h2><span class="no">4</span>결과</h2>
+  <div id="reBar" class="warnbox hidden" style="margin-bottom:10px"><span id="reMsg"></span> <button id="btnRe" class="primary" style="padding:6px 14px;font-size:14px;margin-left:8px">수정 사항 반영해 다시 조립</button></div>
+  <div id="resSummary"></div>
+  <div id="resItems" style="margin-top:12px"></div>
+  <div id="resAudio" style="margin-top:12px"></div>
+  <div id="resProblems" style="margin-top:12px"></div>
+  <div id="resLines" style="margin-top:16px"></div>
+  <div class="row" style="margin-top:12px">
+    <a id="zipLink" href="#"><button>음원 파일만 한 번에 내려받기 (.zip)</button></a>
+  </div>
+</section>
+
+<section id="secExport" class="hidden">
+  <h2><span class="no">5</span>평가 자료 한 번에 내보내기</h2>
+  <p class="sub">음원(문항별·합본), 문제지(워드·인쇄용·모바일 웹시험지), 대본, 검수 보고서, 합본 목차, 자막(SRT)을 zip 파일 하나로 묶습니다.
+    스마트폰에서 직접 듣고 답을 제출해 채점받는 학생용 <b>모바일 웹 시험지(HTML+음원 폴더)</b>도 함께 포함됩니다.</p>
+  <div class="grid">
+    <label>평가 제목</label><div><input id="exTitle" style="width:340px" placeholder="예: 2학년 1학기 영어 듣기평가"></div>
+    <label>포함할 것</label><div><label class="inline"><input type="checkbox" id="exAudio" checked> 음원 (가장 최근에 만든 것)</label><label class="inline"><input type="checkbox" id="exSrt" checked> 자막(SRT)</label></div>
+  </div>
+  <div id="exInfo" class="plan"></div>
+  <div class="row" style="margin-top:10px"><button id="btnExport" class="primary">평가 자료 zip 만들기</button><span id="exMsg" class="muted"></span></div>
+  <div id="exResult" style="margin-top:8px"></div>
+</section>
+
+</main>
+
+<div id="modalBg" class="hidden"></div>
+<div id="voiceStep" class="modal hidden"></div>
+<div id="picker" class="modal hidden"></div>
+
+<script>
+const SAMPLE = `# 듣기 대본 (예시)
+@설정 악센트=US 속도=+0% 대사간격=0.7 반복=2 반복간격=3
+
+## 01 | 동아리 대화 | 악센트=UK+US
+KO: 1번. 대화를 듣고, 여자가 할 일로 가장 적절한 것을 고르시오.
+M: Hi, Emily. Are you still planning to join the photography club this semester?
+W: Yes, I am. But I heard that the first meeting has been moved to Thursday.
+M: That's right. It will start at four thirty in the science building instead of the library.
+W: Thanks for telling me. I'll bring my camera and a notebook.
+
+## 02 | 안내 방송 | 악센트=AU | 반복=1
+KO: 2번. 다음을 듣고, 방송의 목적으로 가장 적절한 것을 고르시오.
+N: Good morning, students. This is an announcement from the school library. Starting next Monday, the library will stay open until seven o'clock every weekday. Please remember to bring your student ID card.
+`;
+
+const LOCALE_KO = {US:'미국',GB:'영국',AU:'호주',CA:'캐나다',IN:'인도',IE:'아일랜드',NZ:'뉴질랜드',ZA:'남아공',HK:'홍콩',KE:'케냐',NG:'나이지리아',PH:'필리핀',SG:'싱가포르',TZ:'탄자니아'};
+const LOCALE_ORDER = ['US','GB','AU','CA','IN','IE','NZ','ZA','HK','KE','NG','PH','SG','TZ'];
+const ROLE_NAME = {M:'남자(M)', W:'여자(W)', N:'해설(N)', KO:'한국어 안내'};
+
+let VOICES = [];
+let items = [];       // 화면에 보이는 문항 설정
+let jobId = null, poll = null, logSince = 0;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function localeLabel(v) {
+  const [lang, reg] = v.locale.split('-');
+  if (lang === 'en') return (LOCALE_KO[reg] || reg) + ' 영어';
+  if (lang === 'ko') return '한국어';
+  return v.localeName || v.locale;
+}
+function voiceLabel(v) {
+  const n = v.name.split('-').slice(2).join('-').replace('Neural','');
+  return n + ' (' + (v.gender === 'Male' ? '남' : '여') + ')';
+}
+function voiceOptions(role, selected, withKeep) {
+  const showAll = $('showAll').checked;
+  let list = VOICES.filter(v => role === 'KO' ? v.locale.startsWith('ko') : (showAll || v.locale.startsWith('en')));
+  if (role !== 'KO' && selected && !list.some(v => v.name === selected)) {
+    const extra = VOICES.find(v => v.name === selected); if (extra) list = list.concat([extra]);
+  }
+  const groups = {};
+  list.forEach(v => { (groups[localeLabel(v) + '|' + v.locale] ||= []).push(v); });
+  const keys = Object.keys(groups).sort((a, b) => {
+    const ra = LOCALE_ORDER.indexOf(a.split('|')[1].split('-')[1]), rb = LOCALE_ORDER.indexOf(b.split('|')[1].split('-')[1]);
+    const la = a.split('|')[1].startsWith('en') ? 0 : 1, lb = b.split('|')[1].startsWith('en') ? 0 : 1;
+    if (la !== lb) return la - lb;
+    return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb) || a.localeCompare(b);
+  });
+  let html = withKeep ? '<option value="">(바꾸지 않음)</option>' : '';
+  keys.forEach(k => {
+    html += '<optgroup label="' + esc(k.split('|')[0]) + '">';
+    groups[k].forEach(v => { html += '<option value="' + v.name + '"' + (v.name === selected ? ' selected' : '') + '>' + esc(voiceLabel(v)) + '</option>'; });
+    html += '</optgroup>';
+  });
+  return html;
+}
+
+async function api(path, body) {
+  const r = await fetch(path, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)} : {});
+  const ct = r.headers.get('content-type') || '';
+  if (!r.ok) { let m = r.status; try { m = (await r.json()).error || m; } catch(e){} throw new Error(m); }
+  return ct.includes('json') ? r.json() : r.blob();
+}
+
+/* ---------- 미리듣기 ---------- */
+let curAudio = null;
+async function preview(btn, voice, text, rate, extra) {
+  const old = btn.textContent; btn.textContent = '…'; btn.disabled = true;
+  try {
+    const blob = await api('/api/preview', Object.assign({voice, text, rate}, extra || {}));
+    if (curAudio) curAudio.pause();
+    curAudio = new Audio(URL.createObjectURL(blob)); curAudio.play();
+  } catch (e) { alert('미리듣기에 실패했습니다: ' + e.message + '\n(인터넷 연결을 확인해 주세요)'); }
+  btn.textContent = old; btn.disabled = false;
+}
+function sampleText(item, role) {
+  if (role === 'KO') return '안녕하세요. 영어 듣기 평가 안내 방송입니다.';
+  const ln = item && item.lines.find(l => l.spk === role);
+  return ln ? ln.text.slice(0, 140) : 'Hello. This is a sample of my voice for the listening test.';
+}
+
+/* ---------- 문항 카드 ---------- */
+function renderItems() {
+  const box = $('items'); box.innerHTML = '';
+  items.forEach((it, i) => {
+    const d = document.createElement('div'); d.className = 'card';
+    let g = '<div class="chead">' + esc(it.id) + (it.title ? ' · ' + esc(it.title) : '') +
+      '<span class="tag">악센트 ' + esc(it.accents.join('+')) + '</span><span class="tag">대사 ' + it.lines.length + '줄</span><span class="tag new" id="plan-' + i + '"></span></div><div class="grid">';
+    it.roles.forEach(r => {
+      g += '<label>' + ROLE_NAME[r] + '</label><div class="vrow"><select data-i="' + i + '" data-role="' + r + '">' + voiceOptions(r, it.voices[r], false) + '</select><button class="mini" data-prev="' + i + '|' + r + '">▶</button></div>';
+    });
+    g += '<label>속도</label><div class="row"><input type="number" step="5" min="-50" max="50" value="' + it.rate + '" data-i="' + i + '" data-f="rate" style="width:80px"><span class="muted">% (0이 기본, 음수는 느리게)</span></div>';
+    g += '<label>본문 재생</label><div class="row"><select data-i="' + i + '" data-f="repeat"><option value="1"' + (it.repeat == 1 ? ' selected' : '') + '>1회</option><option value="2"' + (it.repeat == 2 ? ' selected' : '') + '>2회</option></select><span class="muted">한국어 안내는 맨 앞에 한 번만 나옵니다</span></div></div>';
+    g += '<details><summary>대본 보기</summary><div class="script">' + it.lines.map(l => '<div><span class="spk">' + l.spk + '</span>' + esc(l.text) + '</div>').join('') + '</div></details>';
+    d.innerHTML = g; box.appendChild(d);
+  });
+}
+$('items').addEventListener('change', e => {
+  const t = e.target, i = +t.dataset.i; if (isNaN(i)) return;
+  if (t.dataset.role) items[i].voices[t.dataset.role] = t.value;
+  else if (t.dataset.f === 'rate') items[i].rate = Math.max(-50, Math.min(50, parseInt(t.value || '0', 10) || 0));
+  else if (t.dataset.f === 'repeat') items[i].repeat = +t.value;
+  remember(items[i]);
+});
+$('items').addEventListener('click', e => {
+  const b = e.target.closest('button[data-prev]'); if (!b) return;
+  const [i, r] = b.dataset.prev.split('|'); const it = items[+i];
+  preview(b, it.voices[r], sampleText(it, r), it.rate, {script: $('script').value, item: it.id});
+});
+
+/* ---------- 전체 적용 바 ---------- */
+function renderGlobal() {
+  ['M','W','N','KO'].forEach(r => { $('g' + r).innerHTML = voiceOptions(r, '', true); });
+}
+document.querySelectorAll('button[data-gprev]').forEach(b => b.addEventListener('click', () => {
+  const r = b.dataset.gprev, v = $('g' + r).value;
+  if (!v) { alert('먼저 위 목록에서 목소리를 고른 뒤 눌러 주세요.'); return; }
+  preview(b, v, sampleText(items.find(it => it.roles.includes(r)), r), 0);
+}));
+$('btnApplyAll').addEventListener('click', () => {
+  ['M','W','N','KO'].forEach(r => { const v = $('g' + r).value; if (v) items.forEach(it => { if (it.roles.includes(r)) it.voices[r] = v; }); });
+  const rep = $('gRep').value; if (rep) items.forEach(it => it.repeat = +rep);
+  const rt = $('gRate').value; if (rt !== '') items.forEach(it => it.rate = Math.max(-50, Math.min(50, parseInt(rt, 10) || 0)));
+  items.forEach(it => remember(it, true));
+  scheduleSave(); schedulePlan(); renderChecks();
+  renderItems();
+});
+$('showAll').addEventListener('change', () => { renderGlobal(); renderItems(); scheduleSave(); });
+$('btnReset').addEventListener('click', () => {
+  if (!confirm('문항별로 고른 목소리·속도·재생 횟수를 모두 지우고, 대본에 적힌 악센트 기본값으로 돌릴까요?')) return;
+  SETTINGS = {}; scheduleSave(); doParse();
+});
+
+/* ---------- 대본 분석 ---------- */
+let parseTimer = null;
+function scheduleParse() { clearTimeout(parseTimer); parseTimer = setTimeout(doParse, 500); }
+async function doParse() {
+  const text = $('script').value;
+  if (!text.trim()) { items = []; ['secItems','secOpts','secGo','secExport'].forEach(s => $(s).classList.add('hidden')); $('parseInfo').textContent = ''; $('checks').innerHTML = ''; return; }
+  try {
+    const r = await api('/api/parse', {text});
+    if (absorbScriptSettings(r)) return doParse();   // 대본에 적힌 설정을 화면으로 옮긴 뒤 다시 읽기
+    items = r.items.map(n => {
+      const s = SETTINGS[n.id];
+      if (s) {
+        n.roles.forEach(role => {
+          const v = s.voices && s.voices[role];
+          if (v && (!VOICES.length || VOICES.some(x => x.name === v))) n.voices[role] = v;
+        });
+        if (typeof s.rate === 'number') n.rate = s.rate;
+        if (s.repeat === 1 || s.repeat === 2) n.repeat = s.repeat;
+      }
+      return n;
+    });
+    $('parseInfo').textContent = items.length + '개 문항을 인식했습니다.' + (ABSORBED ? ' ' + ABSORBED : '');
+    $('warnings').innerHTML = '';
+    PRON_SCRIPT = r.pron_script || []; renderPron();
+    renderChecks(r.checks);
+    const has = items.length > 0;
+    ['secItems','secOpts','secGo','secExport'].forEach(s => $(s).classList.toggle('hidden', !has));
+    renderItems();
+    renderQuestions();
+    schedulePlan();
+  } catch (e) { $('parseInfo').textContent = '대본을 읽지 못했습니다: ' + e.message; }
+}
+$('script').addEventListener('input', () => { ABSORBED = ''; scheduleSave(); scheduleParse(); });
+$('btnSample').addEventListener('click', () => { $('script').value = SAMPLE; $('script').dispatchEvent(new Event('input')); });
+$('btnFile').addEventListener('click', () => $('fileIn').click());
+$('fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader(); rd.onload = () => { $('script').value = rd.result; $('script').dispatchEvent(new Event('input')); }; rd.readAsText(f, 'utf-8'); e.target.value = '';
+});
+
+/* ---------- 만들기 ---------- */
+$('btnGo').addEventListener('click', () => {
+  if ($('voiceStepOn').checked) openVoiceStep(); else startGenerate();
+});
+async function startGenerate() {
+  closeModals();
+  $('btnGo').disabled = true; $('goInfo').textContent = '';
+  $('secRes').classList.add('hidden'); $('progWrap').classList.remove('hidden');
+  $('log').textContent = ''; logSince = 0; $('prog').value = 0; $('progText').textContent = '시작하는 중…';
+  const options = getOptions();
+  try {
+    const r = await api('/api/generate', { text: $('script').value, items: items.map(it => ({ rate: it.rate, repeat: it.repeat, voices: it.voices })), options });
+    jobId = r.job; poll = setInterval(tick, 1000); tick();
+  } catch (e) { $('goInfo').textContent = e.message; $('btnGo').disabled = false; $('progWrap').classList.add('hidden'); }
+}
+
+/* ---------- 만들기 전에 목소리 확인하고 고르기 ---------- */
+const ROLES = ['M', 'W', 'N', 'KO'];
+const shortName = v => (v || '').split('-').slice(2).join('-').replace('Neural', '');
+const vinfo = name => VOICES.find(x => x.name === name);
+function genderKo(g) { return g === 'Male' ? '남' : g === 'Female' ? '여' : ''; }
+function closeModals() { ['modalBg', 'voiceStep', 'picker'].forEach(id => $(id).classList.add('hidden')); if (lineAudio) lineAudio.pause(); }
+function openVoiceStep() {
+  if (!items.length) return;
+  const warn = voiceChecks();
+  let h = '<h2>목소리 확인하고 음원 만들기</h2><p class="sub">문항마다 누가 읽을지 확인하세요. ▶로 그 문항의 실제 문장을 들어 보고, <b>바꾸기</b>로 다른 목소리를 고를 수 있습니다.</p>';
+  if (warn.length) h += warn.map(c => '<div class="issue ' + (c.level === '오류' ? 'high' : 'mid') + '">문항 ' + esc(c.id) + ' · ' + esc(c.message) + '</div>').join('');
+  h += '<table class="ptab" style="margin-top:8px"><tr><th>문항</th><th>남자(M)</th><th>여자(W)</th><th>담화(N)</th><th>한국어 안내</th></tr>';
+  items.forEach((it, i) => {
+    h += '<tr><td><b>' + esc(it.id) + '</b><br><span class="muted">' + esc(it.title || '') + '</span></td>';
+    ROLES.forEach(r => {
+      if (!it.roles.includes(r)) { h += '<td class="muted">-</td>'; return; }
+      const v = it.voices[r], inf = vinfo(v);
+      const bad = warn.some(c => c.id === it.id && ((r === 'N' && /해설\(N\)/.test(c.message)) || (r === 'M' && /남자\(M\)/.test(c.message)) || (r === 'W' && /여자\(W\)/.test(c.message))));
+      h += '<td class="vcell"' + (bad ? ' style="background:#fdecec"' : '') + '><b>' + esc(shortName(v)) + '</b> <span class="muted">' + esc(inf ? localeLabel(inf) + ' · ' + genderKo(inf.gender) : '') + '</span><br>' +
+        '<button class="mini" data-vs="play" data-i="' + i + '" data-r="' + r + '">▶ 듣기</button><button class="mini" data-vs="pick" data-i="' + i + '" data-r="' + r + '">바꾸기</button></td>';
+    });
+    h += '</tr>';
+  });
+  h += '</table><div class="row" style="margin-top:14px"><button class="primary" data-vs="go">이 목소리로 음원 만들기</button><button data-vs="cancel">취소</button>' +
+    '<label class="inline muted"><input type="checkbox" data-vs="skip"> 다음부터 이 창 없이 바로 만들기 (3번 옵션에서 다시 켤 수 있음)</label></div>';
+  $('voiceStep').innerHTML = h;
+  $('modalBg').classList.remove('hidden'); $('voiceStep').classList.remove('hidden');
+}
+$('voiceStep').addEventListener('click', e => {
+  const b = e.target.closest('[data-vs]'); if (!b || b.tagName === 'INPUT') return;
+  const act = b.dataset.vs, it = items[+b.dataset.i], r = b.dataset.r;
+  if (act === 'play') preview(b, it.voices[r], sampleText(it, r), it.rate, {script: $('script').value, item: it.id});
+  if (act === 'pick') openPicker(+b.dataset.i, r, 'step');
+  if (act === 'cancel') closeModals();
+  if (act === 'go') startGenerate();
+});
+$('voiceStep').addEventListener('change', e => { if (e.target.dataset.vs === 'skip') { $('voiceStepOn').checked = !e.target.checked; scheduleSave(); } });
+
+/* 목소리 고르기 창: 나라별 카드로 보고, 그 문항 문장으로 들어 보고 고른다 */
+let PICK = null;
+function openPicker(i, role, from, gender) {
+  const it = items[i];
+  if (gender === undefined) {
+    const ko = it.lines.filter(l => l.spk === 'KO').map(l => l.text).join(' ');
+    gender = role === 'M' ? 'Male' : role === 'W' ? 'Female' : (role === 'N' ? (/여자/.test(ko) && !/남자/.test(ko) ? 'Female' : /남자/.test(ko) && !/여자/.test(ko) ? 'Male' : '') : '');
+  }
+  PICK = {i, role, from, gender};
+  const cur = it.voices[role];
+  let list = VOICES.filter(v => role === 'KO' ? v.locale.startsWith('ko') : ($('showAll').checked || v.locale.startsWith('en')));
+  if (gender) list = list.filter(v => v.gender === gender);
+  const groups = {};
+  list.forEach(v => { (groups[v.locale] ||= []).push(v); });
+  const keys = Object.keys(groups).sort((a, b) => {
+    const ra = LOCALE_ORDER.indexOf(a.split('-')[1]), rb = LOCALE_ORDER.indexOf(b.split('-')[1]);
+    return (a.startsWith('en') ? 0 : 1) - (b.startsWith('en') ? 0 : 1) || (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb) || a.localeCompare(b);
+  });
+  let h = '<h2>' + esc(it.id) + '번 ' + esc(ROLE_NAME[role] || role) + ' 목소리 고르기</h2>' +
+    '<p class="sub">▶를 누르면 이 문항의 실제 문장을 그 목소리로 들려줍니다. 지금 목소리: <b>' + esc(shortName(cur)) + '</b></p>' +
+    '<div class="row"><span class="seg">' + [['', '전체'], ['Male', '남자'], ['Female', '여자']].map(g => '<button class="mini' + (gender === g[0] ? ' on' : '') + '" data-pk="g" data-g="' + g[0] + '">' + g[1] + '</button>').join('') + '</span>' +
+    '<label class="inline muted"><input type="checkbox" id="pickAll"> 고른 목소리를 <b>모든 문항</b>의 ' + esc(ROLE_NAME[role] || role) + '에 적용</label></div>';
+  if (!keys.length) h += '<div class="muted" style="margin:12px 0">맞는 목소리가 없습니다.</div>';
+  keys.forEach(k => {
+    h += '<div style="margin-top:10px"><b>' + esc(localeLabel(groups[k][0])) + '</b> <span class="muted">' + groups[k].length + '개</span></div><div class="vgrid">' +
+      groups[k].map(v => '<div class="vcard' + (v.name === cur ? ' cur' : '') + '"><div class="nm">' + esc(shortName(v.name)) + ' <span class="muted">' + genderKo(v.gender) + '</span>' + (v.name === cur ? ' <span class="tag">지금</span>' : '') + '</div>' +
+        '<button class="mini" data-pk="play" data-v="' + esc(v.name) + '">▶ 듣기</button><button class="mini" data-pk="use" data-v="' + esc(v.name) + '">이 목소리로</button></div>').join('') + '</div>';
+  });
+  h += '<div class="row" style="margin-top:10px"><button data-pk="close">닫기</button></div>';
+  $('picker').innerHTML = h;
+  $('modalBg').classList.remove('hidden'); $('picker').classList.remove('hidden'); $('picker').scrollTop = 0;
+}
+$('picker').addEventListener('click', e => {
+  const b = e.target.closest('[data-pk]'); if (!b || !PICK) return;
+  const it = items[PICK.i], role = PICK.role, act = b.dataset.pk;
+  if (act === 'g') { const all = $('pickAll').checked; openPicker(PICK.i, role, PICK.from, b.dataset.g); $('pickAll').checked = all; return; }
+  if (act === 'play') { preview(b, b.dataset.v, sampleText(it, role), it.rate, {script: $('script').value, item: it.id}); return; }
+  if (act === 'close') { $('picker').classList.add('hidden'); if ($('voiceStep').classList.contains('hidden')) closeModals(); return; }
+  if (act === 'use') {
+    const v = b.dataset.v, targets = $('pickAll').checked ? items.filter(x => x.roles.includes(role)) : [it];
+    const changed = targets.filter(x => x.voices[role] !== v);
+    changed.forEach(x => { x.voices[role] = v; remember(x, true); });
+    scheduleSave(); schedulePlan(); renderChecks(); renderItems();
+    if (PICK.from === 'result' && changed.length) {
+      const label = (targets.length > 1 ? '모든 문항' : it.id + '번') + ' ' + (ROLE_NAME[role] || role) + ' → ' + shortName(v);
+      if (!PENDING.includes(label)) PENDING.push(label);
+      showReBar(); updateExportInfo();
+    }
+    $('picker').classList.add('hidden');
+    if (PICK.from === 'step') openVoiceStep(); else closeModals();
+  }
+});
+$('modalBg').addEventListener('click', closeModals);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('modalBg').classList.contains('hidden')) { if (!$('picker').classList.contains('hidden') && !$('voiceStep').classList.contains('hidden')) $('picker').classList.add('hidden'); else closeModals(); } });
+async function tick() {
+  try {
+    const r = await api('/api/job/' + jobId + '?since=' + logSince);
+    logSince = r.logLen;
+    if (r.log.length) { const l = $('log'); l.textContent += r.log.join('\n') + '\n'; l.scrollTop = l.scrollHeight; }
+    const pct = r.total ? Math.min(100, Math.round(r.done * 100 / r.total)) : 0;
+    $('prog').value = r.status === 'done' ? 100 : pct;
+    $('progText').textContent = r.status === 'running'
+      ? ('만드는 중… ' + r.done + ' / ' + r.total + '줄' + (r.reused ? ' (그중 저장된 음성 재사용 ' + r.reused + '줄)' : '') + ' · ' + r.elapsed + '초 경과')
+      : ({done: '끝났습니다', partial: '끝났습니다 (일부 문항 실패)', error: '실패했습니다'}[r.status] || r.status) + ' (' + r.elapsed + '초)';
+    if (r.status !== 'running') { clearInterval(poll); $('btnGo').disabled = false; showResult(r); refreshCache(); schedulePlan(); }
+  } catch (e) { clearInterval(poll); $('btnGo').disabled = false; $('progText').textContent = '연결이 끊겼습니다: ' + e.message; }
+}
+function showResult(r, noScroll) {
+  $('secRes').classList.remove('hidden');
+  r.problems = r.problems || []; r.files = r.files || [];
+  $('resSummary').innerHTML = statusBanner(r) + (r.summary ? '<details style="margin-top:8px"><summary>요약 전체 보기</summary><pre class="log">' + esc(r.summary) + '</pre></details>' : '');
+  $('resItems').innerHTML = itemTable(r.result);
+  const au = r.files.filter(f => /\.(mp3|wav)$/i.test(f.name));
+  $('resAudio').innerHTML = au.map(f => '<div class="audio"><b>' + esc(f.name) + '</b> <span class="muted">(' + (f.size / 1048576).toFixed(1) + ' MB)</span> &nbsp; <a href="/files/' + jobId + '/' + encodeURIComponent(f.name) + '" download="' + esc(f.name) + '">내려받기</a><audio controls preload="none" src="/files/' + jobId + '/' + encodeURIComponent(f.name) + '"></audio></div>').join('') || '<div class="muted">만들어진 음원이 없습니다.</div>';
+  const others = r.files.filter(f => !/\.(mp3|wav)$/i.test(f.name));
+  $('resAudio').innerHTML += others.length ? '<div class="muted">기타 파일: ' + others.map(f => '<a href="/files/' + jobId + '/' + encodeURIComponent(f.name) + '" target="_blank">' + esc(f.name) + '</a>').join(' · ') + '</div>' : '';
+  $('resLines').innerHTML = linesPanel(r);
+  let pr = problemTable(r);
+  if (r.errorLog) pr += '<details style="margin-top:8px"><summary>오류 기록 보기</summary><pre class="log">' + esc(r.errorLog) + '</pre></details>';
+  $('resProblems').innerHTML = pr;
+  $('zipLink').href = '/api/zip/' + jobId;
+  LAST_JOB = r;
+  showReBar();
+  updateExportInfo();
+  if (!noScroll) $('secRes').scrollIntoView({behavior: 'smooth'});
+}
+
+/* ---------- 문제 구간 바로 듣기 · 다른 단어 표시 · 줄 단위 작업 ---------- */
+let LAST_JOB = null, PENDING = [];
+const ONES = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(' ');
+const TENS = '_ _ twenty thirty forty fifty sixty seventy eighty ninety'.split(' ');
+function n2w(n) { if (n < 20) return ONES[n]; if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : ''); if (n < 1000) return ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' ' + n2w(n % 100) : ''); if (n < 1e6) return n2w(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? ' ' + n2w(n % 1000) : ''); return String(n); }
+function tokKey(w) { let t = w.toLowerCase().replace(/[\u2019\u2018]/g, "'").replace(/[^a-z0-9']/g, ''); if (/^\d+$/.test(t)) t = n2w(+t); return t; }
+function diffWords(a, b) {
+  const A = a.split(/\s+/).filter(Boolean), B = b.split(/\s+/).filter(Boolean);
+  const ka = A.map(tokKey), kb = B.map(tokKey), n = A.length, m = B.length;
+  const dp = Array.from({length: n + 1}, () => new Int16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = (ka[i] && ka[i] === kb[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const ma = new Array(n).fill(false), mb = new Array(m).fill(false);
+  let i = 0, j = 0;
+  while (i < n && j < m) { if (ka[i] && ka[i] === kb[j]) { ma[i] = mb[j] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+  return [A.map((w, k) => (ma[k] || !ka[k]) ? esc(w) : '<mark class="miss">' + esc(w) + '</mark>').join(' '),
+          B.map((w, k) => (mb[k] || !kb[k]) ? esc(w) : '<mark class="extra">' + esc(w) + '</mark>').join(' '),
+          A.filter((w, k) => !ma[k] && ka[k])];
+}
+function problemTable(r) {
+  const ps = r.problems || []; if (!ps.length) return '';
+  let h = '<h3 style="font-size:15px;margin:0 0 6px">직접 들어보셔야 할 줄</h3><div class="muted" style="margin-bottom:6px"><mark class="miss">빨강</mark> 대본에는 있는데 받아쓰기에서 들리지 않은 단어 · <mark class="extra">파랑</mark> 대본에 없는데 들린 단어.' +
+    ' 이름·숫자처럼 표기만 다른 경우는 들어보고 괜찮으면 <b>교사가 확인 완료</b>를 체크하세요. (다시 만들 필요 없음)</div>' +
+    '<table class="ptab"><tr><th>문항·줄</th><th>상태</th><th>대본 / 받아쓰기</th><th>할 일</th></tr>';
+  ps.forEach(p => {
+    const [da, db] = diffWords(p['대본'] || '', p['받아쓰기'] || '');
+    const it = items.find(x => x.id === p['문항']), role = p['화자'], ok = p['상태'] === '교사확인';
+    h += '<tr data-key="' + esc(p._key || '') + '" data-id="' + esc(p['문항']) + '" data-role="' + esc(role) + '" data-text="' + esc(p['대본'] || '') + '" data-heard="' + esc(p['받아쓰기'] || '') + '"><td>' + esc(p['문항']) + ' · ' + esc(p['줄']) + '줄<br><span class="muted">' + esc(ROLE_NAME[role] || role) + '</span></td>' +
+      '<td><b class="' + (ok ? 'okt' : 'warn') + '">' + (ok ? '교사 확인 완료' : esc(p['상태'])) + '</b><br><span class="muted">' + esc(p['사유'] || '') + '</span>' +
+      (p._changed ? '<br><span class="tag new">다시 만듦 · 조립 필요</span>' : '') + '</td>' +
+      '<td><div><span class="muted">대본</span> ' + da + '</div><div style="margin-top:4px"><span class="muted">받아쓰기</span> ' + (db || '<span class="muted">(없음)</span>') + '</div>' +
+      (p._spoken ? '<div style="margin-top:4px"><span class="muted">읽은 문장(발음 사전 적용)</span> ' + esc(p._spoken) + '</div>' : '') + '</td>' +
+      '<td class="acts">' + (p._key ? '<button class="mini" data-act="play">▶ 이 줄 듣기</button><button class="mini" data-act="pron">발음 고치기</button><button class="mini" data-act="retry">속도 바꿔 다시 만들기</button>' : '') +
+      (it && role !== 'KO' && it.voices[role] ? '<div class="vrow" style="margin-top:4px"><select data-act="voice">' + voiceOptions(role, it.voices[role], false) + '</select><button class="mini" data-act="setvoice">목소리 바꾸기</button></div>' : '') +
+      (p._key ? '<label class="inline" style="margin-top:4px"><input type="checkbox" data-act="approve"' + (ok ? ' checked' : '') + '> 교사가 확인 완료</label>' : '') + '</td></tr>';
+  });
+  return h + '</table>';
+}
+function showReBar() {
+  const need = (LAST_JOB && LAST_JOB.result && LAST_JOB.result.needs_reassemble) || PENDING.length;
+  $('reBar').classList.toggle('hidden', !need);
+  if (need) $('reMsg').textContent = '바뀐 내용이 아직 음원 파일에 반영되지 않았습니다.' + (PENDING.length ? ' (' + PENDING.join(', ') + ')' : '') + ' 다시 조립하면 바뀐 줄만 새로 만들고 나머지는 재사용합니다.';
+}
+$('btnRe').addEventListener('click', () => { PENDING = []; startGenerate(); });
+async function refreshJob() { const r = await api('/api/job/' + jobId + '?since=999999'); showResult(r, true); }
+let lineAudio = null;
+$('resProblems').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const tr = b.closest('tr'), key = tr.dataset.key, act = b.dataset.act;
+  if (act === 'play') {
+    if (lineAudio) lineAudio.pause();
+    lineAudio = new Audio('/api/line/audio/' + key + '?t=' + Date.now()); lineAudio.play().catch(err => alert('재생하지 못했습니다: ' + err.message));
+  } else if (act === 'pron') {
+    addPronFromLine(tr.dataset.text, tr.dataset.heard, tr.dataset.id);
+  } else if (act === 'retry') {
+    const old = b.textContent; b.disabled = true; b.textContent = '다시 만드는 중…';
+    try {
+      const r = await api('/api/line/retry', {job: jobId, key, model: $('model').value});
+      if (!r.improved) alert('속도를 바꿔 봐도 더 나은 음성을 찾지 못했습니다.\n들어보고 괜찮으면 "교사가 확인 완료", 아니면 목소리를 바꾸거나 문장을 조금 고쳐 보세요.');
+      await refreshJob();
+    } catch (err) { alert('다시 만들지 못했습니다: ' + err.message); b.disabled = false; b.textContent = old; }
+  } else if (act === 'setvoice') {
+    const it = items.find(x => x.id === tr.dataset.id), role = tr.dataset.role, v = tr.querySelector('select[data-act=voice]').value;
+    if (!it || !v || it.voices[role] === v) return;
+    it.voices[role] = v; remember(it); renderItems();
+    const label = it.id + '번 ' + (ROLE_NAME[role] || role) + ' → ' + v.split('-').slice(2).join('-').replace('Neural', '');
+    if (!PENDING.includes(label)) PENDING.push(label);
+    showReBar();
+  }
+});
+/* ---------- 모든 줄 듣고 고치기 ---------- */
+const OPEN_GROUPS = new Set();
+function linesPanel(r) {
+  const rows = (r.result && r.result.rows) || []; if (!rows.length) return '';
+  const groups = [];
+  rows.forEach(x => { let g = groups.find(y => y.id === x['문항']); if (!g) groups.push(g = {id: x['문항'], title: x['제목'], rows: []}); g.rows.push(x); });
+  let h = '<h3 style="font-size:15px;margin:0 0 4px">모든 줄 듣고 고치기</h3><div class="muted" style="margin-bottom:6px">직접 들어보고 고칠 줄이 있으면: ▶로 듣기 → <b>다른 버전 들어보기</b>로 후보 4개(느리게·빠르게·낮게·높게)를 듣고 "이걸로 쓰기", 또는 문장을 고친 뒤 <b>문장 고치기</b>. 끝나면 위의 "수정 사항 반영해 다시 조립"을 누르세요.</div>';
+  groups.forEach(g => {
+    const it = items.find(x => x.id === g.id);
+    const voices = [...new Set(g.rows.map(x => (ROLE_NAME[x['화자']] || x['화자']).replace(/\(.*\)/, '') + ' ' + x['목소리'].split('-').slice(2).join('-').replace('Neural', '')))].join(' · ');
+    const ii = items.findIndex(x => x.id === g.id);
+    const vbtns = ii < 0 ? '' : '<div class="row" style="margin-top:6px"><span class="muted">목소리 바꾸기:</span>' +
+      items[ii].roles.map(r => '<button class="mini" data-act="gpick" data-i="' + ii + '" data-r="' + r + '">' + esc((ROLE_NAME[r] || r).replace(/\(.*\)/, '')) + ' ' + esc(shortName(items[ii].voices[r])) + ' ▾</button>').join('') + '</div>';
+    h += '<details class="card" data-group="' + esc(g.id) + '"' + (OPEN_GROUPS.has(g.id) ? ' open' : '') + '><summary><b>' + esc(g.id) + (g.title ? ' ' + esc(g.title) : '') + '</b> <span class="muted">' + g.rows.length + '줄 · ' + esc(voices) + '</span></summary>' + vbtns + '<table class="ptab" style="margin-top:6px">';
+    g.rows.forEach(x => {
+      const st = x['상태'], cls = st === '통과' || st === '교사확인' ? 'okt' : (st === '확인필요' || st === '검수실패' ? 'warn' : 'muted');
+      h += '<tr data-key="' + esc(x._key || '') + '" data-id="' + esc(g.id) + '" data-lineno="' + esc(x._lineno || '') + '" data-spk="' + esc(x['화자']) + '" data-text="' + esc(x['대본']) + '" data-heard="' + esc(x['받아쓰기'] || '') + '">' +
+        '<td style="white-space:nowrap">' + esc(x['줄']) + '줄 ' + esc(x['화자']) + '<br><span class="' + cls + '">' + esc(st === '교사확인' ? '교사 확인' : st) + '</span>' + (x._changed ? '<br><span class="tag new">조립 필요</span>' : '') + '</td>' +
+        '<td style="width:60%"><textarea class="qin small" data-act="edit" rows="2">' + esc(x['대본']) + '</textarea><div class="muted">' + esc(x['목소리']) + (x['출처'] ? ' · ' + esc(x['출처']) : '') + (x._spoken ? '<br>읽은 문장(발음 사전 적용): ' + esc(x._spoken) : '') + '</div></td>' +
+        '<td class="acts">' + (x._key ? '<button class="mini" data-act="lplay">▶ 듣기</button><button class="mini" data-act="variants">다른 버전 들어보기</button><button class="mini" data-act="pron">발음 고치기</button>' : '') +
+        '<button class="mini" data-act="savetext">문장 고치기</button><div class="vlist"></div></td></tr>';
+    });
+    h += '</table></details>';
+  });
+  return h;
+}
+$('resLines').addEventListener('toggle', e => { const d = e.target.closest && e.target.closest('details[data-group]'); if (d) { if (d.open) OPEN_GROUPS.add(d.dataset.group); else OPEN_GROUPS.delete(d.dataset.group); } }, true);
+function replaceScriptLine(lineno, spk, oldText, newText) {
+  const ta = $('script'), lines = ta.value.split('\n'), i = (+lineno) - 1;
+  const re = /^(\s*(?:M|W|N|KO|남|여|해설|안내)\s*[:：]\s*)(.*)$/i;
+  const m = i >= 0 && i < lines.length ? lines[i].match(re) : null;
+  const norm = s => s.replace(/\s+/g, ' ').trim();
+  if (!m || norm(m[2]) !== norm(oldText)) return false;
+  lines[i] = m[1] + newText.replace(/\s*\n\s*/g, ' ').trim();
+  ta.value = lines.join('\n');
+  ta.dispatchEvent(new Event('input'));
+  return true;
+}
+$('resLines').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  if (b.dataset.act === 'gpick') { openPicker(+b.dataset.i, b.dataset.r, 'result'); return; }
+  const tr = b.closest('tr'), key = tr.dataset.key, act = b.dataset.act;
+  if (act === 'lplay' || act === 'vplay') {
+    if (lineAudio) lineAudio.pause();
+    lineAudio = new Audio((act === 'vplay' ? b.dataset.url : '/api/line/audio/' + key) + '?t=' + Date.now());
+    lineAudio.play().catch(err => alert('재생하지 못했습니다: ' + err.message));
+  } else if (act === 'pron') {
+    addPronFromLine(tr.dataset.text, tr.dataset.heard, tr.dataset.id);
+  } else if (act === 'variants') {
+    const box = tr.querySelector('.vlist'), old = b.textContent; b.disabled = true; b.textContent = '후보 만드는 중… (약 20초)';
+    try {
+      const r = await api('/api/line/variants', {job: jobId, key, model: $('model').value});
+      box.innerHTML = r.variants.map(v => '<div class="issue ' + (v.ok === false ? 'mid' : 'low') + '" style="margin:4px 0"><b>' + esc(v.label) + '</b> ' +
+        (v.sim !== undefined ? '<span class="' + (v.ok ? 'okt' : 'warn') + '">' + (v.ok ? '✔ 받아쓰기 통과' : '⚠ ' + esc((v.reasons || []).join(', '))) + '</span>' : '') +
+        '<br><button class="mini" data-act="vplay" data-url="' + esc(v.url) + '">▶ 듣기</button><button class="mini" data-act="choose" data-n="' + v.n + '">이걸로 쓰기</button></div>').join('');
+    } catch (err) { alert('후보를 만들지 못했습니다: ' + err.message); }
+    b.disabled = false; b.textContent = old;
+  } else if (act === 'choose') {
+    try {
+      const r = await api('/api/line/choose', {job: jobId, key, n: +b.dataset.n});
+      OPEN_GROUPS.add(tr.dataset.id);
+      await refreshJob();
+    } catch (err) { alert('저장하지 못했습니다: ' + err.message); }
+  } else if (act === 'savetext') {
+    const nt = tr.querySelector('textarea[data-act=edit]').value.trim(), ot = tr.dataset.text;
+    if (!nt || nt === ot) { alert('문장을 고친 뒤 눌러 주세요.'); return; }
+    if (!replaceScriptLine(tr.dataset.lineno, tr.dataset.spk, ot, nt)) { alert('대본 칸에서 이 줄을 찾지 못했습니다. (여러 줄에 걸친 문장이거나 대본이 바뀌었습니다)\n맨 위 1번 대본 칸에서 직접 고쳐 주세요.'); return; }
+    tr.dataset.text = nt;
+    const label = tr.dataset.id + '번 ' + tr.querySelector('td').textContent.split('줄')[0] + '줄 문장 수정';
+    if (!PENDING.includes(label)) PENDING.push(label);
+    b.textContent = '✔ 대본에 반영됨'; showReBar(); updateExportInfo();
+  }
+});
+
+$('resProblems').addEventListener('change', async e => {
+  const c = e.target; if (c.dataset.act !== 'approve') return;
+  const key = c.closest('tr').dataset.key;
+  try { await api('/api/line/approve', {job: jobId, key, approved: c.checked}); await refreshJob(); }
+  catch (err) { alert(err.message); c.checked = !c.checked; }
+});
+
+/* ---------- 대본 규칙 점검 ---------- */
+let CHECKS = [];
+function voiceChecks() {
+  // 안내(KO)의 '여자/남자'와 실제로 고른 목소리의 성별이 맞는지 확인 (특히 한 사람이 말하는 해설 N)
+  const out = [], g = name => { const v = VOICES.find(x => x.name === name); return v ? v.gender : ''; };
+  items.forEach(it => {
+    const ko = it.lines.filter(l => l.spk === 'KO').map(l => l.text).join(' ');
+    const nv = it.voices.N, hasM = it.roles.includes('M'), hasW = it.roles.includes('W');
+    if (nv && !hasM && !hasW) {
+      const gen = g(nv), name = nv.split('-').slice(2).join('-').replace('Neural', '');
+      if (/여자/.test(ko) && !/남자/.test(ko) && gen === 'Male') out.push({id: it.id, level: '오류', message: "안내는 '여자가 하는 말'인데 해설(N) 목소리가 남자(" + name + ")입니다. 해설 목소리를 여자로 바꾸세요. (\'음원 만들기\' 창의 \'바꾸기\' 또는 2번)"});
+      if (/남자/.test(ko) && !/여자/.test(ko) && gen === 'Female') out.push({id: it.id, level: '오류', message: "안내는 '남자가 하는 말'인데 해설(N) 목소리가 여자(" + name + ")입니다. 해설 목소리를 남자로 바꾸세요. (\'음원 만들기\' 창의 \'바꾸기\' 또는 2번)"});
+    }
+    if (it.voices.M && g(it.voices.M) === 'Female') out.push({id: it.id, level: '주의', message: '남자(M) 역할에 여자 목소리를 골랐습니다.'});
+    if (it.voices.W && g(it.voices.W) === 'Male') out.push({id: it.id, level: '주의', message: '여자(W) 역할에 남자 목소리를 골랐습니다.'});
+  });
+  return out;
+}
+let SERVER_CHECKS = [];
+function renderChecks(list) {
+  if (list !== undefined) SERVER_CHECKS = list || [];
+  CHECKS = SERVER_CHECKS.concat(voiceChecks());
+  const box = $('checks');
+  if (!items.length) { box.innerHTML = ''; return; }
+  if (!CHECKS.length) { box.innerHTML = '<div class="issue ok" style="margin-top:8px">✔ 규칙 점검: 형식상 문제를 찾지 못했습니다.</div>'; return; }
+  const nErr = CHECKS.filter(c => c.level === '오류').length;
+  box.innerHTML = '<div style="margin-top:8px"><b style="font-size:14px">규칙 점검</b> <span class="muted">오류 ' + nErr + ' · 주의 ' + (CHECKS.length - nErr) + ' (AI 없이 바로 확인한 결과)</span></div>' +
+    CHECKS.map(c => '<div class="issue ' + (c.level === '오류' ? 'high' : 'mid') + '">' + (c.id ? '문항 ' + esc(c.id) + ' · ' : '') + '[' + esc(c.level) + '] ' + esc(c.message) + '</div>').join('');
+}
+
+/* (객관식 문항 만들기 구역은 뺐습니다. 예전에 저장된 문항 정보만 그대로 보관) */
+let QUESTIONS = {};
+let AICONF = {hasKey: false};
+let QMODE = 'api';
+function renderQuestions() { updateExportInfo(); }
+function showAiConf() {}
+
+/* ---------- 평가 자료 내보내기 ---------- */
+function updateExportInfo() {
+  const audio = LAST_JOB && LAST_JOB.result ? (LAST_JOB.result.saved || []).length : null;
+  let msg = '음원: ' + (audio === null ? '이번에 만든 음원이 없으면 가장 최근에 만든 음원을 넣습니다.' : '방금 만든 음원 ' + audio + '개');
+  if (PENDING.length || (LAST_JOB && LAST_JOB.result && LAST_JOB.result.needs_reassemble)) msg += ' <span class="warn">(반영 안 된 수정 사항이 있습니다. 4번에서 다시 조립하세요)</span>';
+  $('exInfo').innerHTML = msg;
+}
+$('btnExport').addEventListener('click', async () => {
+  const b = $('btnExport'); b.disabled = true; $('exMsg').textContent = '만드는 중…';
+  try {
+    const r = await api('/api/export', {text: $('script').value, questions: {}, title: $('exTitle').value, job: jobId, audio: $('exAudio').checked, srt: $('exSrt').checked});
+    const a = document.createElement('a'); a.href = r.url; a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
+    $('exMsg').textContent = '✔ ' + r.name + ' 를 내려받았습니다.';
+    $('exResult').innerHTML = '<div class="okbox">음원 ' + r.audio + '개' + (r.audio_from ? ' (' + esc(r.audio_from) + '에 만든 음원)' : '') + ' · 자막 ' + r.srt + '개' +
+      ' &nbsp; <a href="' + r.url + '" download="' + esc(r.name) + '">다시 내려받기</a></div>' + (r.notes.length ? r.notes.map(n => '<div class="warn">· ' + esc(n) + '</div>').join('') : '');
+  } catch (err) { $('exMsg').textContent = '✖ ' + err.message; }
+  b.disabled = false;
+});
+$('exTitle').addEventListener('input', () => scheduleSave());
+
+/* ---------- 대본에 적힌 목소리·발음 설정을 화면 설정으로 옮기기 ---------- */
+const VOICE_OPT_RE = /^\s*(목소리(?:M|W|N|KO)|남자목소리|여자목소리|담화목소리|안내목소리)\s*=/;
+function absorbScriptSettings(r) {
+  let nv = 0, np = 0;
+  r.items.forEach(n => {
+    Object.entries(n.script_voices || {}).forEach(([role, v]) => {
+      if (VOICES.length && !VOICES.some(x => x.name === v)) return;
+      const s = SETTINGS[n.id] || (SETTINGS[n.id] = {voices: {}, rate: n.rate, repeat: n.repeat});
+      s.voices = Object.assign({}, s.voices || {}, {[role]: v}); nv++;
+    });
+  });
+  (r.pron_script || []).forEach(e => {
+    const ex = PRON.find(x => x.word === e.word && (x.only || '') === (e.only || ''));
+    if (ex) ex.say = e.say; else PRON.push({word: e.word, say: e.say, only: e.only || ''});
+    np++;
+  });
+  const hasKeys = r.items.some(n => Object.keys(n.script_voices || {}).length) || (r.pron_script || []).length;
+  if (!hasKeys) return false;
+  const cleaned = $('script').value.split('\n').filter(l => !/^\s*@발음/.test(l)).map(l => {
+    if (/^\s*##/.test(l)) return l.split('|').filter((part, i) => i === 0 || !VOICE_OPT_RE.test(part)).join('|').replace(/\s*\|\s*$/, '');
+    if (/^\s*@설정/.test(l)) return l.replace(/\s*(목소리(?:M|W|N|KO)|남자목소리|여자목소리|담화목소리|안내목소리)=\S+/g, '');
+    return l;
+  }).join('\n');
+  if (cleaned === $('script').value) return false;
+  $('script').value = cleaned;
+  ABSORBED = '대본에 적혀 있던 목소리 ' + nv + '개' + (np ? ', 발음 ' + np + '개' : '') + '를 화면 설정으로 옮겼습니다. 이제 2번에서 바꿀 수 있습니다.';
+  if (np) { renderPron(); savePron(); }
+  const wasRestoring = restoring; restoring = false; scheduleSave(); restoring = wasRestoring;
+  return true;
+}
+let ABSORBED = '';
+
+/* ---------- 발음 사전 ---------- */
+let PRON = [], PRON_SCRIPT = [], pronTimer = null;
+function renderPron() {
+  const rows = PRON.map((e, i) => '<tr data-pi="' + i + '"><td><input class="qin" data-pf="word" value="' + esc(e.word || '') + '" placeholder="대본에 적힌 단어"></td>' +
+    '<td><input class="qin" data-pf="say" value="' + esc(e.say || '') + '" placeholder="소리 나는 대로"></td>' +
+    '<td style="width:90px"><input class="qin" data-pf="only" value="' + esc(e.only || '') + '" placeholder="전체"></td>' +
+    '<td class="acts"><button class="mini" data-pa="raw">▶ 원래</button><button class="mini" data-pa="say">▶ 고친 것</button><button class="mini" data-pa="del">지우기</button></td></tr>').join('');
+  const srows = '';
+  $('pronTable').innerHTML = (PRON.length || PRON_SCRIPT.length) ? '<tr><th>원래 단어</th><th>읽을 방식</th><th>적용 문항</th><th></th></tr>' + rows + srows : '<tr><td class="muted">아직 등록한 단어가 없습니다. "+ 단어 추가" 또는 결과 화면의 "발음 고치기"를 누르세요.</td></tr>';
+  const n = PRON.filter(e => e.word && e.say).length + PRON_SCRIPT.length;
+  $('pronCount').textContent = n ? n + '개' : '';
+}
+function savePron() {
+  clearTimeout(pronTimer);
+  pronTimer = setTimeout(async () => {
+    try { const r = await api('/api/pron', {entries: PRON}); $('pronInfo').textContent = '✔ 저장됨 (' + r.entries.filter(e => e.word && e.say).length + '개)'; }
+    catch (e) { $('pronInfo').textContent = '저장 실패: ' + e.message; }
+    schedulePlan(); scheduleParse();
+  }, 600);
+}
+$('pronTable').addEventListener('input', e => {
+  const t = e.target, tr = t.closest('tr[data-pi]'); if (!tr || !t.dataset.pf) return;
+  PRON[+tr.dataset.pi][t.dataset.pf] = t.value; savePron();
+});
+$('pronTable').addEventListener('click', e => {
+  const b = e.target.closest('button[data-pa]'); if (!b) return;
+  const i = +b.closest('tr').dataset.pi, en = PRON[i];
+  if (b.dataset.pa === 'del') { PRON.splice(i, 1); renderPron(); savePron(); return; }
+  const txt = b.dataset.pa === 'raw' ? en.word : en.say;
+  if (!txt) { alert('단어를 먼저 입력해 주세요.'); return; }
+  preview(b, $('pronVoice').value, txt, 0, {raw: true});
+});
+$('btnPronAdd').addEventListener('click', () => {
+  PRON.push({word: '', say: '', only: ''}); renderPron(); $('pronBox').open = true;
+  const ins = document.querySelectorAll('#pronTable input[data-pf=word]'); if (ins.length) ins[ins.length - 1].focus();
+});
+function addPronFromLine(text, heard, itemId) {
+  const miss = diffWords(text || '', heard || '')[2].map(w => w.replace(/^["'(\[]+|["',.!?;:)\]]+$/g, ''));
+  const w = prompt('발음을 고칠 단어를 대본에 적힌 그대로 입력하세요.\n(받아쓰기에서 안 들린 단어를 먼저 넣어 두었습니다)', miss[0] || '');
+  if (!w || !w.trim()) return;
+  const word = w.trim();
+  if (!(text || '').includes(word)) { alert('이 줄에서 "' + word + '"를 찾지 못했습니다. 대본에 적힌 그대로(대소문자 포함) 써 주세요.'); return; }
+  const s = prompt('"' + word + '"를 어떻게 읽을까요? 소리 나는 대로 영어 철자로 써 주세요.\n예: Vance → Vans, St. → Street, Dr. → Doctor, 2 p.m. → two p m', word);
+  if (!s || !s.trim() || s.trim() === word) return;
+  const all = confirm('다른 문항에 같은 단어가 나와도 똑같이 읽을까요?\n[확인] 모든 문항   [취소] ' + itemId + '번 문항만');
+  const ex = PRON.find(e => e.word === word && (e.only || '') === (all ? '' : itemId));
+  if (ex) ex.say = s.trim(); else PRON.push({word, say: s.trim(), only: all ? '' : itemId});
+  renderPron(); savePron();
+  const label = '발음 사전: ' + word + ' → ' + s.trim();
+  if (!PENDING.includes(label)) PENDING.push(label);
+  showReBar(); updateExportInfo();
+}
+
+/* ---------- 정확한 상태 표시 ---------- */
+function statusBanner(r) {
+  const res = r.result;
+  if (!res) return '<div class="badbox">' + esc(r.error || '오류가 났습니다. 아래 오류 기록을 확인해 주세요.') + '</div>';
+  const c = res.counts, need = c['확인필요'] + c['검수실패'];
+  const failedIds = res.failed.map(f => f.id).join(', ');
+  let cls, msg;
+  if (res.overall === 'error') { cls = 'badbox'; msg = '✖ 음원을 하나도 만들지 못했습니다.\n' + res.failed.map(f => '· 문항 ' + f.id + ': ' + f.why).join('\n'); }
+  else if (res.overall === 'partial') { cls = 'badbox'; msg = '✖ 만들지 못한 문항이 있습니다: ' + failedIds + (res.combine && res.combined_missing.length ? '\n※ 전체 합본에서도 이 문항이 빠졌습니다.' : '') + (need ? '\n또 직접 들어봐야 할 줄이 ' + need + '개 있습니다.' : '') + '\n인터넷 연결을 확인한 뒤 다시 누르면, 이미 만든 줄은 재사용하고 남은 부분만 만듭니다.'; }
+  else if (res.overall === 'review') { cls = 'warnbox'; msg = '⚠ 음원은 모두 만들었지만, 직접 들어봐야 할 줄이 ' + need + '개 있습니다. 아래 표를 확인해 주세요.'; }
+  else if (res.overall === 'unchecked') { cls = 'graybox'; msg = '○ 음원은 모두 만들었습니다. 다만 ' + c['검수안함'] + '줄은 받아쓰기 검수를 하지 않았습니다.' + (res.check_note ? '\n(' + res.check_note + ')' : ''); }
+  else { cls = 'okbox'; msg = '✔ 검수 대상 ' + c['통과'] + '줄이 모두 통과했습니다. (그래도 한 번쯤은 직접 들어보세요)'; }
+  if (c['검수안함'] && res.overall !== 'unchecked') msg += '\n또 ' + c['검수안함'] + '줄은 받아쓰기 검수를 하지 않았습니다.' + (res.check_note ? ' (' + res.check_note + ')' : '');
+  else if (res.check_note && res.overall !== 'unchecked' && res.check_requested) msg += '\n(' + res.check_note + ')';
+  const chip = (k, n, cl) => n ? '<span class="chip ' + (cl || '') + '">' + k + ' ' + n + '</span>' : '';
+  const chips = '<div class="chips">' + chip('통과', c['통과'], 'ok') + chip('확인필요', c['확인필요'], 'warn') + chip('검수실패', c['검수실패'], 'bad') +
+    chip('검수 안 함', c['검수안함']) + chip('한국어 안내(검수 대상 아님)', c['한국어안내']) +
+    chip('새로 만든 줄', res.new) + chip('저장된 음성 재사용', res.reused) + chip('걸린 시간(초)', res.seconds) + '</div>';
+  return '<div class="' + cls + '">' + esc(msg) + '</div>' + chips;
+}
+function itemTable(res) {
+  if (!res || !res.items || !res.items.length) return '';
+  const row = s => '<tr><td>' + esc(s.id) + (s.title ? ' ' + esc(s.title) : '') + '</td>' +
+    (s.ok ? '<td class="ok">완성</td>' : '<td class="bad">실패<br><span class="muted">' + esc(s.error || '') + '</span></td>') +
+    '<td>' + s['통과'] + '</td><td>' + (s['확인필요'] + s['검수실패']) + '</td><td>' + s['검수안함'] + '</td><td>' + s['한국어안내'] + '</td>' +
+    '<td>' + s.new + ' / ' + s.reused + '</td><td>' + (s.ok ? s.seconds + '초' : '-') + '</td></tr>';
+  let html = '<h3 style="font-size:15px;margin:0 0 6px">문항별 결과</h3><table><tr><th>문항</th><th>음원</th><th>통과</th><th>확인 필요</th><th>검수 안 함</th><th>한국어 안내</th><th>새로 / 재사용</th><th>길이</th></tr>' + res.items.map(row).join('') + '</table>';
+  if (res.combine) html += '<div class="muted" style="margin-top:6px">전체 합본: ' + (res.combined_file ? esc(res.combined_file) + (res.combined_missing.length ? ' (빠진 문항: ' + esc(res.combined_missing.join(', ')) + ')' : ' (모든 문항 포함)') : '만들지 못함') + '</div>';
+  return html;
+}
+
+/* ---------- 설정 자동 저장 ---------- */
+let SETTINGS = {};          // 문항 번호 -> 고른 목소리·속도·재생 횟수
+let saveTimer = null, planTimer = null, restoring = false;
+function remember(it, quiet) {
+  SETTINGS[it.id] = { voices: Object.assign({}, it.voices), rate: it.rate, repeat: it.repeat };
+  if (!quiet) { scheduleSave(); schedulePlan(); renderChecks(); }
+}
+function getOptions() {
+  return { combine: document.querySelector('input[name=combine]:checked').value, itemGap: +$('itemGap').value || 0,
+           check: $('check').checked, model: $('model').value, reuse: $('reuse').checked, format: 'mp3', voiceStep: $('voiceStepOn').checked };
+}
+function applyOptions(o) {
+  if (!o) return;
+  const rb = document.querySelector('input[name=combine][value="' + o.combine + '"]'); if (rb) rb.checked = true;
+  if (o.itemGap !== undefined) $('itemGap').value = o.itemGap;
+  if (o.check !== undefined) $('check').checked = !!o.check;
+  if (o.model) $('model').value = o.model;
+  if (o.reuse !== undefined) $('reuse').checked = !!o.reuse;
+  if (o.voiceStep !== undefined) $('voiceStepOn').checked = !!o.voiceStep;
+  if (o.showAll !== undefined) $('showAll').checked = !!o.showAll;
+}
+function stateNow() {
+  return { script: $('script').value, settings: SETTINGS, questions: QUESTIONS, exportTitle: $('exTitle').value, qmode: QMODE,
+           options: Object.assign(getOptions(), { showAll: $('showAll').checked }), savedAt: new Date().toISOString() };
+}
+function scheduleSave() {
+  if (restoring) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const st = stateNow();
+    try { localStorage.setItem('lm_state', JSON.stringify(st)); } catch (e) {}
+    try { const r = await api('/api/state', st); $('saveInfo').textContent = '✔ 자동 저장됨 (' + r.savedAt + ')'; }
+    catch (e) { $('saveInfo').textContent = '이 브라우저에만 저장됨'; }
+  }, 700);
+}
+function cfgItems() { return items.map(it => ({ rate: it.rate, repeat: it.repeat, voices: it.voices })); }
+function schedulePlan() { clearTimeout(planTimer); planTimer = setTimeout(doPlan, 600); }
+async function doPlan() {
+  if (!items.length) { $('planInfo').innerHTML = ''; return; }
+  try {
+    const p = await api('/api/plan', { text: $('script').value, items: cfgItems(), options: getOptions() });
+    const t = p.total, all = t.new + t.reuse + t.recheck;
+    let msg;
+    if (!$('reuse').checked) msg = '모든 줄(' + all + '줄)을 새로 만듭니다.';
+    else if (!t.new && !t.recheck) msg = '✔ 바뀐 줄이 없습니다. ' + all + '줄 모두 저장된 음성으로 다시 조립합니다. (빠르고 인터넷을 거의 쓰지 않음)';
+    else msg = '이번에 <b>새로 만들 줄 ' + t.new + '줄</b> · 저장된 음성 재사용 ' + t.reuse + '줄' + (t.recheck ? ' · 검수만 다시 ' + t.recheck + '줄' : '');
+    if (t.pron) msg += ' · 발음 사전이 적용되는 줄 ' + t.pron + '줄';
+    $('planInfo').innerHTML = msg;
+    p.items.forEach((c, i) => { const el = $('plan-' + i); if (el) el.textContent = ($('reuse').checked ? c.new : c.new + c.reuse + c.recheck) ? '새로 만들 줄 ' + ($('reuse').checked ? c.new : c.new + c.reuse + c.recheck) : ''; });
+  } catch (e) { $('planInfo').textContent = ''; }
+}
+async function refreshCache() {
+  try { const c = await api('/api/cache'); $('cacheInfo').textContent = c.count + '줄 (' + (c.bytes / 1048576).toFixed(1) + ' MB)'; } catch (e) {}
+}
+$('btnClearCache').addEventListener('click', async () => {
+  if (!confirm('저장된 줄별 음성을 모두 지울까요?\n다음 제작 때는 모든 줄을 새로 만듭니다. (이미 만든 문항 mp3 파일은 지워지지 않습니다)')) return;
+  try { await api('/api/cache/clear', {}); } catch (e) { alert(e.message); }
+  refreshCache(); schedulePlan();
+});
+document.querySelectorAll('#secOpts input, #secOpts select').forEach(el => el.addEventListener('change', () => { scheduleSave(); schedulePlan(); }));
+
+/* ---------- 시작 ---------- */
+(async function init() {
+  try {
+    const v = await api('/api/voices'); VOICES = v.voices;
+    if (v.source === 'fallback') $('goInfo').textContent = '(목소리 목록을 온라인으로 받지 못해 기본 목록(영어·한국어)을 보여 줍니다)';
+  } catch (e) { $('parseInfo').textContent = '목소리 목록을 불러오지 못했습니다: ' + e.message; }
+  let st = {};
+  try { st = await api('/api/state'); } catch (e) {}
+  if (!st || !st.script) { try { st = JSON.parse(localStorage.getItem('lm_state') || '{}'); } catch (e) { st = {}; } }
+  if (!st.script) { try { const old = localStorage.getItem('lm_script'); if (old) st = { script: old }; } catch (e) {} }
+  restoring = true;
+  applyOptions(st.options);
+  SETTINGS = st.settings || {};
+  QUESTIONS = st.questions || {};
+  $('exTitle').value = st.exportTitle || '';
+  showAiConf();
+  try { PRON = (await api('/api/pron')).entries || []; } catch (e) { PRON = []; }
+  renderGlobal();
+  $('pronVoice').innerHTML = voiceOptions('N', 'en-US-JennyNeural', false);
+  renderPron();
+  $('script').value = st.script || SAMPLE;
+  if (st.savedAt) $('saveInfo').textContent = '✔ 지난 작업을 불러왔습니다 (' + new Date(st.savedAt).toLocaleString('ko-KR') + ' 저장분)';
+  await doParse();
+  restoring = false;
+  refreshCache();
+})();
+</script>
+</body>
+</html>

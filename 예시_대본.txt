@@ -1,0 +1,20 @@
+﻿# 듣기 대본 예시 (이 파일을 웹앱의 "대본 파일 불러오기"로 열어 보세요)
+# # 로 시작하는 줄은 메모라서 무시됩니다.
+# 화자: M 남자 / W 여자 / N 한 사람이 읽는 담화 / KO 한국어 안내
+
+@설정 악센트=US 속도=+0% 대사간격=0.7 반복=2 반복간격=3
+
+## 01 | 동아리 대화 | 악센트=UK+US
+KO: 1번. 대화를 듣고, 여자가 할 일로 가장 적절한 것을 고르시오.
+M: Hi, Emily. Are you still planning to join the photography club this semester?
+W: Yes, I am. But I heard that the first meeting has been moved to Thursday.
+M: That's right. It will start at four thirty in the science building instead of the library.
+W: Thanks for telling me. I'll bring my camera and a notebook.
+
+## 02 | 안내 방송 | 악센트=AU | 반복=1
+KO: 2번. 다음을 듣고, 방송의 목적으로 가장 적절한 것을 고르시오.
+N: Good morning, students. This is an announcement from the school library. Starting next Monday, the library will stay open until seven o'clock every weekday. Students who need a quiet place to study for the final exams are welcome to use the new reading room on the second floor. Please remember to bring your student ID card.
+
+## 03 | 짧은 대화 | 악센트=IN+CA | 반복=1
+M: Did you finish the science report?
+W: Almost. I still need to add two graphs, but I'll send it to you tonight.

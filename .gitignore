@@ -1,0 +1,36 @@
+# 환경변수 및 보안 키
+.env
+.env.*
+*.key
+*.pem
+
+# 로컬 사용자 데이터 및 API 키 저장소 (절대 커밋 금지)
+_data/
+_data/*
+_cache/
+_cache/*
+output_web/
+output_web/*
+
+# 파이썬 캐시
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Node 및 빌드 아티팩트
+node_modules/
+dist/
+build/
+
+# 임시 및 테스트 로그
+*.log
+.harness/
+test_*.py
+build_sample_exam.py
+audit_secrets.py
+
+# OS 생성 파일
+.DS_Store
+Thumbs.db
+desktop.ini
